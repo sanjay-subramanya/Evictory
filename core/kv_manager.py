@@ -30,14 +30,16 @@ class KVMemoryManager:
     def _protected_range(self):
         n = len(self.tokens)
         protected = set()
-        # sink tokens (first few)
+
         for i in range(min(self.sink_tokens, n)):
             protected.add(i)
         for i in range(self.turn_start_idx):
             protected.add(i)
+        
         recent_start = max(self.turn_start_idx, n - self.recent_tokens)
         for i in range(recent_start, n):
             protected.add(i)
+        
         return protected
 
     def append(self, k, v, layer_idx, loss=None):
@@ -62,6 +64,7 @@ class KVMemoryManager:
         return max(0.5, min(0.95, threshold)) 
 
     def evict_similar_token(self):
+        """Find most similar token pair; evict the one with lower prediction loss (more predictable)."""
         n = len(self.tokens)
         if n - self.turn_start_idx < 4:
             return False
@@ -85,6 +88,7 @@ class KVMemoryManager:
 
         max_sim = -1.0
         best_pair = None
+        
         for i in range(len(sigs)):
             for j in range(i+1, len(sigs)):
                 thresh_i = self._dynamic_threshold(self.tokens[idx_map[i]]["loss"])
@@ -109,12 +113,16 @@ class KVMemoryManager:
         return True
 
     def get_layer_kv(self, layer_idx, device):
+        """Get KV cache for a specific layer, including system prompt."""
         if not self.tokens:
             return None, None
+        
         k_list = [t["keys"][layer_idx].to(device) for t in self.tokens]
         v_list = [t["values"][layer_idx].to(device) for t in self.tokens]
+        
         k = torch.cat(k_list, dim=2).to(dtype=self.dtype)
         v = torch.cat(v_list, dim=2).to(dtype=self.dtype)
+        
         return k, v
 
     def update_recent_tokens(self, new_recent_tokens):

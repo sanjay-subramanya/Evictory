@@ -7,6 +7,7 @@ from .kv_manager import KVMemoryManager
 from .telemetry import EvictionTelemetry
 
 class AdaptiveEvictionDecoder:
+    """Decoder engine with adaptive KV cache eviction for efficient memory management."""
     def __init__(self, config):
         self.last_tokens = []
         self.cfg = config
@@ -38,6 +39,7 @@ class AdaptiveEvictionDecoder:
         self.volatility_history = []
 
     def reset_cache(self):
+        """Reset KV cache and other runtime parameters to empty state."""
         if hasattr(self, 'kv'):
             del self.kv
             gc.collect()
@@ -56,8 +58,10 @@ class AdaptiveEvictionDecoder:
         self.last_tokens.clear()
 
     def _rebuild_past(self):
+        """Rebuild DynamicCache from stored KV tensors with current absolute positions."""
         past = DynamicCache()
         model_dtype = next(self.model.parameters()).dtype
+        
         for layer_idx in range(self.num_layers):
             k, v = self.kv.get_layer_kv(layer_idx, self.device)
             if k is not None and v is not None:
@@ -69,6 +73,7 @@ class AdaptiveEvictionDecoder:
         return past if len(past) > 0 else None
 
     def _sample(self, logits, temperature=0.7, top_k=30):
+        """Select next token from logits with temperature and top-k sampling."""
         logits = logits / temperature
         v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
         logits[logits < v[:, [-1]]] = -float('inf')
@@ -82,6 +87,7 @@ class AdaptiveEvictionDecoder:
         return nll
     
     def _compute_window(self, volatility):
+        """Map loss volatility (0-2+) to adaptive recency window size (4-16)."""
         self.latest_volatility = volatility
         self.volatility_history.append(volatility)
         if len(self.volatility_history) > 100:
@@ -93,14 +99,16 @@ class AdaptiveEvictionDecoder:
         max_vol = max(recent_vols)
         
         if max_vol <= min_vol:
-            return min_window
+            new_window = min_window
         else:
             norm_vol = (volatility - min_vol) / (max_vol - min_vol)
             new_window = int(min_window + (max_window - min_window) * norm_vol)
             new_window = max(min_window, min(max_window, new_window)) 
-            return new_window
+        
+        return new_window
 
     def generate(self, prompt_chunk):
+        """Generate response for a single prompt chunk using adaptive KV cache eviction."""
         with torch.no_grad():
             self.kv.start_new_turn()
             input_ids = self.tok(prompt_chunk, return_tensors="pt", add_special_tokens=False).input_ids.to(self.device)
@@ -137,7 +145,6 @@ class AdaptiveEvictionDecoder:
                         loss=0.0
                     )
             
-            self.global_pos += chunk_len
             logits = out.logits[:, -1, :]
             next_token = self._sample(logits)
             first_id = next_token.item()
@@ -146,6 +153,7 @@ class AdaptiveEvictionDecoder:
             yield current_response, self.telemetry
 
             current_past = self._rebuild_past()
+            self.global_pos += chunk_len
 
             for step in range(self.cfg.max_new_tokens):
                 position_ids = torch.tensor([[self.global_pos]], device=self.device)
@@ -186,7 +194,8 @@ class AdaptiveEvictionDecoder:
 
                     self.telemetry.volatility = volatility
                     self.telemetry.window_size = new_window
-                    # print(f"[DEBUG] step: {step+1}, volatility: {volatility}, new window: {new_window}")
+                    if self.cfg.debug:
+                        print(f"[DEBUG] step: {step+1}, volatility: {volatility}, new window: {new_window}")
 
                 current_past_raw = out.past_key_values
 
@@ -207,6 +216,7 @@ class AdaptiveEvictionDecoder:
                 v = self.latest_volatility
                 threshold = int(8 + 24 * max(0.0, min(1.0, 1.0 - v)))
                 threshold = max(8, min(32, threshold))
+                
                 if turn_len > threshold:
                     self.kv.evict_similar_token()
                     self.telemetry.evictions += 1

@@ -4,6 +4,7 @@ from core.decoder import AdaptiveEvictionDecoder
 from core.chat import ChatEngine
 
 class ModelManager:
+    """Manage model loading, reloading, and parameter updates."""
     def __init__(self, config):
         self.config = config
         self.debug = config.debug
@@ -12,6 +13,7 @@ class ModelManager:
         self.load_model()
 
     def load_model(self):
+        """Initial load or reload of the model."""
         if self.debug:
             print("[MANAGER] Loading AdaptiveEvictionDecoder (KV cache eviction)...")
         
@@ -31,10 +33,8 @@ class ModelManager:
             print("[MANAGER] Model loaded successfully")
 
     def update_config(self, volatility_update_interval, volatility_window, max_new_tokens):
-        try:
-            if self.debug:
-                print(f"[MANAGER] Updating config: volatility_window={volatility_window}, volatility_update_interval={volatility_update_interval}, max={max_new_tokens}")
-            
+        """The function called by Gradio UI when parameters are reset"""
+        try:            
             self.config.volatility_window = int(volatility_window)
             self.config.volatility_update_interval = int(volatility_update_interval)
             self.config.max_new_tokens = int(max_new_tokens)

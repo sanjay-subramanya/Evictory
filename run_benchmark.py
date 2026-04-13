@@ -1,4 +1,4 @@
 from benchmark.run_comparison import run_benchmarks
 
 if __name__ == "__main__":
-    run_benchmarks()
+    run_benchmarks()    

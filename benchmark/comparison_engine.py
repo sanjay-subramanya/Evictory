@@ -29,7 +29,7 @@ class Comparison:
         os.makedirs(f"{self.cfg.parent_dir}/benchmark/results", exist_ok=True)
     
     def format_chat_prompt(self, messages):
-        """Apply chat template"""
+        """Apply chat template."""
         return self.tokenizer.apply_chat_template(
             messages,
             tokenize=False,
@@ -37,12 +37,12 @@ class Comparison:
         )
     
     def estimate_standard_memory(self, total_tokens):
-        """Estimate what standard model would use (for comparison only)"""
+        """Estimate what standard model would use (for comparison only)."""
         bytes_per_token = 28 * 1024
         return (total_tokens * bytes_per_token) / (1024 * 1024)
         
     def run_standard_conversation(self, conversation_turns):
-        """Run conversation with vanilla model (no eviction)"""
+        """Run conversation with vanilla model (no eviction)."""
         print("\n" + "="*70)
         print("📥 PHASE 1: Running Vanilla model (no eviction)")
         print("="*70)
@@ -127,7 +127,7 @@ class Comparison:
         return results
     
     def run_compressed_conversation(self, conversation_turns):
-        """Run conversation with Evictory (prediction entropy eviction)"""
+        """Run conversation with Evictory (prediction entropy eviction)."""
         print("\n" + "="*70)
         print("📥 PHASE 2: Running Evictory (prediction entropy eviction)")
         print("="*70)
@@ -212,7 +212,7 @@ class Comparison:
         return results
     
     def compare(self, standard_results, compressed_results):
-        """Compare standard vs Evictory"""
+        """Compare standard vs Evictory."""
         print("\n" + "="*70)
         print("🔍 ANALYSIS: Standard vs Evictory")
         print("="*70)
@@ -355,7 +355,7 @@ class Comparison:
         return avg_metrics, similarity_retention, (std_memory - comp_memory)
     
     def plot_results(self, standard_results, compressed_results, comparison_metrics):
-        """Create visualization"""
+        """Create visualization."""
         fig, axes = plt.subplots(2, 3, figsize=(18, 12))
         
         ax = axes[0, 0]
