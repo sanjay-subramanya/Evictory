@@ -1,0 +1,29 @@
+{
+  "averages": {
+    "similarity": 0.2939135570116797,
+    "rouge1": 0.47227997999168086,
+    "rouge2": 0.2840764483421212,
+    "rougeL": 0.3617175954098748,
+    "semantic": 0.7082494153556499,
+    "speed_overhead": 26.669640411030162,
+    "final_cache_size": 574,
+    "total_evictions": 741,
+    "final_volatility": 0.329461932182312,
+    "final_window": 5,
+    "similarity_retention": 0.5010814861836648
+  },
+  "similarity_retention": 0.5010814861836648,
+  "memory": {
+    "standard_mb": 34.5625,
+    "compressed_mb": 15.6953125,
+    "saved_mb": 18.8671875,
+    "saved_percent": 54.58860759493671
+  },
+  "evictory_stats": {
+    "final_cache_size": 574,
+    "total_evictions": 741,
+    "final_volatility": 0.329461932182312,
+    "final_window": 5,
+    "compression_ratio": 56.349809885931556
+  }
+}
