@@ -218,8 +218,8 @@ class AdaptiveEvictionDecoder:
                 threshold = max(8, min(32, threshold))
                 
                 if turn_len > threshold:
-                    self.kv.evict_similar_token()
-                    self.telemetry.evictions += 1
+                    if self.kv.evict_similar_token():
+                        self.telemetry.evictions += 1
 
                 text = self.tok.decode([token_id], skip_special_tokens=True)
 
